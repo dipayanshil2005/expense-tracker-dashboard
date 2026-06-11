@@ -4,6 +4,27 @@ import pandas as pd
 from datetime import datetime
 
 # --- 1. Data Access Functions ---
+
+def init_db():
+    """Creates the database and table if they don't exist yet."""
+    conn = sqlite3.connect('expenses.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            amount REAL NOT NULL,
+            category TEXT NOT NULL,
+            description TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+
+
 def load_data():
     conn = sqlite3.connect('expenses.db')
     df = pd.read_sql_query("SELECT * FROM expenses", conn)
