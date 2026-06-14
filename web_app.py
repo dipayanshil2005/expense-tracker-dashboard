@@ -3,8 +3,6 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 
-# --- 1. Data Access Functions ---
-
 def init_db():
     """Creates the database and table if they don't exist yet."""
     conn = sqlite3.connect('expenses.db')
@@ -51,10 +49,10 @@ def delete_expense_from_db(expense_id):
     conn.commit()
     conn.close()
 
-# --- 2. Web App Interface ---
+
 st.set_page_config(page_title="Expense Dashboard", page_icon="💰", layout="wide")
 
-# --- Hide Streamlit Branding ---
+
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
@@ -66,10 +64,10 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 
 st.title("💰 Advanced Expense Dashboard")
 
-# Load our data
+
 df = load_data()
 
-# --- KPI Cards (Overview) ---
+
 st.subheader("Overview")
 kpi1, kpi2, kpi3 = st.columns(3)
 
@@ -90,7 +88,7 @@ with kpi3:
 
 st.divider()
 
-# --- TOP BAR: Filtering Options ---
+
 with st.expander("🔍 Filter Your Data", expanded=True):
     filter_col1, filter_col2 = st.columns(2)
     
@@ -118,7 +116,7 @@ with st.expander("🔍 Filter Your Data", expanded=True):
 
 st.divider()
 
-# --- MAIN SCREEN: Tabs Layout ---
+
 tab1, tab2 = st.tabs(["📊 Dashboard View", "⚙️ Manage Data"])
 
 with tab1:
@@ -132,7 +130,7 @@ with tab1:
     st.divider()
     st.subheader("Transaction History")
     if not filtered_df.empty:
-        # We show the ID in the table now so the user knows what to delete
+        
         st.dataframe(filtered_df, use_container_width=True, hide_index=True)
     else:
         st.write("No transactions found.")
@@ -153,29 +151,24 @@ with tab2:
 
     st.divider()
     
-    # --- NEW: Delete Feature ---
+    
     st.subheader("🗑️ Delete an Expense")
     if not df.empty:
-        # Create a formatted list of strings for the dropdown menu
-        # Example: "ID: 5 | 2023-10-27 | Food | $15.50"
+        
         expense_options = df.apply(
             lambda row: f"ID: {row['id']} | {row['date']} | {row['category']} | ₹{row['amount']:.2f} | {row['description']}", 
             axis=1
         ).tolist()
         
-        # Dropdown menu to select the expense
+        
         selected_expense_str = st.selectbox("Select an expense to remove:", expense_options)
         
-        # Delete button
         if st.button("Delete Selected Expense", type="primary"):
-            # Extract the actual ID number from the string they selected
-            # It splits the string by spaces and takes the second word (which is the number)
             expense_id = int(selected_expense_str.split(" ")[1])
-            
-            # Delete it from the database
+
             delete_expense_from_db(expense_id)
             
             st.success(f"Expense ID {expense_id} deleted successfully!")
-            st.rerun() # Refresh the page immediately to show the update
+            st.rerun() 
     else:
         st.info("No expenses available to delete.")
