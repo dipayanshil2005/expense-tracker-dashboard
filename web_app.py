@@ -166,11 +166,14 @@ else:
         st.divider()
         st.subheader("Transaction History")
         if not filtered_df.empty:
-            display_df = filtered_df.drop(columns=['user_id']) if 'user_id' in filtered_df.columns else filtered_df
             
-            # ---> THE FIX IS RIGHT HERE <---
-            display_df = display_df.sort_values(by='id', ascending=True)
+            # 1. FIRST: Sort the data using the hidden database IDs
+            display_df = filtered_df.sort_values(by='id', ascending=True)
             
+            # 2. SECOND: Drop the IDs so they don't show up on the screen or in the CSV
+            display_df = display_df.drop(columns=['user_id', 'id'], errors='ignore')
+            
+            # 3. Show the clean dataframe
             st.dataframe(display_df, use_container_width=True, hide_index=True)
             
             # --- CSV Export Feature ---
@@ -202,15 +205,23 @@ else:
         
         # Only show Edit and Delete options if there is data
         if not df.empty:
-            expense_options = df.apply(
-                lambda row: f"ID: {row['id']} | {row['date']} | {row['category']} | ₹{row['amount']:.2f} | {row['description']}", 
-                axis=1
-            ).tolist()
+            
+            # ---> THE FIX: Create a dictionary mapping the DB ID to a clean string <---
+            expense_dict = {
+                row['id']: f"{row['date']} | {row['category']} | ₹{row['amount']:.2f} | {row['description']}"
+                for _, row in df.iterrows()
+            }
 
             # --- UPDATE ---
             st.subheader("✏️ Edit an Existing Expense")
-            selected_edit_str = st.selectbox("Select an expense to edit:", expense_options, key="edit_select")
-            edit_expense_id = int(selected_edit_str.split(" ")[1])
+            
+            # Streamlit uses the ID as the real value, but shows the clean string to the user!
+            edit_expense_id = st.selectbox(
+                "Select an expense to edit:", 
+                options=list(expense_dict.keys()), 
+                format_func=lambda x: expense_dict[x],
+                key="edit_select"
+            )
             
             selected_row = df[df['id'] == edit_expense_id].iloc[0]
             
@@ -224,19 +235,24 @@ else:
                 
                 if st.form_submit_button("Update Expense"):
                     update_expense_in_db(edit_expense_id, new_date, new_amount, new_category, new_description)
-                    st.success(f"Expense ID {edit_expense_id} updated successfully!")
+                    st.success("Expense updated successfully!")
                     st.rerun()
 
             st.divider()
             
             # --- DELETE ---
             st.subheader("🗑️ Delete an Expense")
-            selected_del_str = st.selectbox("Select an expense to remove:", expense_options, key="del_select")
+            
+            del_expense_id = st.selectbox(
+                "Select an expense to remove:", 
+                options=list(expense_dict.keys()), 
+                format_func=lambda x: expense_dict[x],
+                key="del_select"
+            )
             
             if st.button("Delete Selected Expense", type="primary"):
-                del_expense_id = int(selected_del_str.split(" ")[1])
                 delete_expense_from_db(del_expense_id)
-                st.success(f"Expense ID {del_expense_id} deleted successfully!")
+                st.success("Expense deleted successfully!")
                 st.rerun()
         else:
             st.info("Add some expenses above to unlock editing and deleting options.")
